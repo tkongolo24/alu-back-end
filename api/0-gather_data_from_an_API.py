@@ -6,7 +6,6 @@ import json
 import requests
 from sys import argv
 
-
 if __name__ == "__main__":
     """ Functions for gathering  data from an API """
     request_employee = requests.get(
