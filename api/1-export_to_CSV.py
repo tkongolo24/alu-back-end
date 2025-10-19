@@ -1,31 +1,50 @@
 #!/usr/bin/python3
-"""a Python script to export data in the CSV format"""
+"""
+Python script to export an employee's TODO list data in CSV format.
+"""
 
+import csv
 import requests
 import sys
 
+
+def fetch_employee_data(employee_id):
+    """
+    Fetch user and TODO list data for a given employee ID.
+    """
+    base_url = "https://jsonplaceholder.typicode.com"
+    user_url = f"{base_url}/users/{employee_id}"
+    todos_url = f"{base_url}/todos?userId={employee_id}"
+
+    user_info = requests.get(user_url).json()
+    todos_info = requests.get(todos_url).json()
+
+    return user_info, todos_info
+
+
+def export_to_csv(employee_id, username, todos):
+    """
+    Export TODO list data to a CSV file named '<employee_id>.csv'.
+    """
+    filename = f"{employee_id}.csv"
+    with open(filename, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
+        for task in todos:
+            writer.writerow([
+                employee_id,
+                username,
+                task.get("completed"),
+                task.get("title")
+            ])
+
+
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: ./export_to_csv.py <employee_id>")
+        sys.exit(1)
+
     employee_id = sys.argv[1]
-    url = "https://jsonplaceholder.typicode.com/users/{}".format(employee_id)
-    todo = "https://jsonplaceholder.typicode.com/todos?userId={}"
-    todo = todo.format(employee_id)
+    user_info, todos_info = fetch_employee_data(employee_id)
 
-    user_info = requests.request("GET", url).json()
-    todo_info = requests.request("GET", todo).json()
-
-    employee_name = user_info.get("name")
-    employee_username = user_info.get("username")
-    total_tasks = list(filter(lambda x: (x["completed"] is True), todo_info))
-    task_com = len(total_tasks)
-    total_task_done = len(todo_info)
-
-    with open(str(employee_id) + '.csv', "w") as f:
-        [
-            f.write(
-                '"' + str(employee_id) + '",' +
-                '"' + employee_username + '",' +
-                '"' + str(task["completed"]) + '",' +
-                '"' + task["title"] + '",' + "\n"
-            )
-            for task in todo_info
-        ]
+    username = user_info.get("username")
+    export_to_csv(employee_id, username, todos_info)
