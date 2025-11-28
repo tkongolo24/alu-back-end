@@ -29,11 +29,12 @@ if __name__ == "__main__":
 
     # Build the JSON structure
     all_employees_data = {}
-    
+
     for user_id, username in user_dict.items():
         # Filter todos for this user
-        user_todos = [todo for todo in todos if todo.get("userId") == user_id]
-        
+        user_todos = [todo for todo in todos
+                      if todo.get("userId") == user_id]
+
         # Build task list for this user
         tasks_list = []
         for task in user_todos:
@@ -42,7 +43,7 @@ if __name__ == "__main__":
                 "task": task.get("title"),
                 "completed": task.get("completed")
             })
-        
+
         # Add to main dictionary with user_id as string key
         all_employees_data[str(user_id)] = tasks_list
 
