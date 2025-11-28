@@ -1,46 +1,52 @@
 #!/usr/bin/python3
-"""
-Python script that gathers all employees' TODO lists
-and exports them to todo_all_employees.json.
-"""
-
+"""Script to export all employees TODO list data to JSON format"""
 import json
 import requests
 
 
-def fetch_all_users():
-    """Fetch all users from the API."""
-    url = "https://jsonplaceholder.typicode.com/users"
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
-
-
-def fetch_user_todos(user_id):
-    """Fetch TODOs for a specific user by ID."""
-    url = f"https://jsonplaceholder.typicode.com/todos?userId={user_id}"
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
-
-
-def main():
-    """Gather all TODOs and export to JSON."""
-    all_users_data = {}
-    users = fetch_all_users()
-
-    for user in users:
-        user_id = str(user.get("id"))
-        username = user.get("username")
-        todos = fetch_user_todos(user_id)
-        all_users_data[user_id] = [
-            {"username": username, "task": task.get("title"), "completed": task.get("completed")}
-            for task in todos
-        ]
-
-    with open("todo_all_employees.json", "w", encoding="utf-8") as json_file:
-        json.dump(all_users_data, json_file)
-
-
 if __name__ == "__main__":
-    main()
+    # Base URL for the API
+    base_url = "https://jsonplaceholder.typicode.com"
+
+    # Get all users
+    users_response = requests.get("{}/users".format(base_url))
+    if users_response.status_code != 200:
+        exit(1)
+
+    users = users_response.json()
+
+    # Get all todos
+    todos_response = requests.get("{}/todos".format(base_url))
+    if todos_response.status_code != 200:
+        exit(1)
+
+    todos = todos_response.json()
+
+    # Create a dictionary to map user IDs to usernames
+    user_dict = {}
+    for user in users:
+        user_dict[user.get("id")] = user.get("username")
+
+    # Build the JSON structure
+    all_employees_data = {}
+    
+    for user_id, username in user_dict.items():
+        # Filter todos for this user
+        user_todos = [todo for todo in todos if todo.get("userId") == user_id]
+        
+        # Build task list for this user
+        tasks_list = []
+        for task in user_todos:
+            tasks_list.append({
+                "username": username,
+                "task": task.get("title"),
+                "completed": task.get("completed")
+            })
+        
+        # Add to main dictionary with user_id as string key
+        all_employees_data[str(user_id)] = tasks_list
+
+    # Write to JSON file
+    filename = "todo_all_employees.json"
+    with open(filename, mode='w') as jsonfile:
+        json.dump(all_employees_data, jsonfile)
