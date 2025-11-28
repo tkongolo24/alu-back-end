@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Get employee's TODO list
     todos_response = requests.get(f"{base_url}/todos",
-                                   params={"userId": employee_id})
+                                  params={"userId": employee_id})
     if todos_response.status_code != 200:
         sys.exit(1)
 
