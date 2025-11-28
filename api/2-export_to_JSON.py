@@ -1,70 +1,52 @@
 #!/usr/bin/python3
-"""
-Python script that exports an employee's TODO list to a JSON file.
-"""
-
+"""Script to export employee TODO list data to JSON format"""
 import json
 import requests
 import sys
 
 
-def fetch_employee_data(employee_id):
-    """
-    Fetch employee info and their TODO list from the API.
-    """
-    base_url = "https://jsonplaceholder.typicode.com"
-    user_url = f"{base_url}/users/{employee_id}"
-    todos_url = f"{base_url}/todos?userId={employee_id}"
-
-    user_response = requests.get(user_url)
-    todos_response = requests.get(todos_url)
-
-    if user_response.status_code != 200:
-        print("Error: Employee not found.")
-        sys.exit(1)
-
-    user_info = user_response.json()
-    todos_info = todos_response.json()
-
-    return user_info, todos_info
-
-
-def export_to_json(employee_id, username, todos):
-    """
-    Export all TODO list tasks to a JSON file named '<USER_ID>.json'.
-    Format:
-    { "USER_ID": [
-        {"task": "TASK_TITLE", "completed": TASK_COMPLETED_STATUS, "username": "USERNAME"},
-        ...
-    ]}
-    """
-    data = {
-        str(employee_id): [
-            {
-                "task": task.get("title"),
-                "completed": task.get("completed"),
-                "username": username
-            }
-            for task in todos
-        ]
-    }
-
-    filename = f"{employee_id}.json"
-    with open(filename, "w", encoding="utf-8") as jsonfile:
-        json.dump(data, jsonfile)
-
-
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: ./2-export_to_JSON.py <employee_id>")
+    if len(sys.argv) < 2:
         sys.exit(1)
 
     try:
-        employee_id = int(sys.argv[1])
-    except ValueError:
-        print("Error: Employee ID must be an integer.")
+        employee_id = sys.argv[1]
+        user_id = int(employee_id)
+    except (ValueError, IndexError):
         sys.exit(1)
 
-    user_info, todos_info = fetch_employee_data(employee_id)
-    username = user_info.get("username")
-    export_to_json(employee_id, username, todos_info)
+    # Base URL for the API
+    base_url = "https://jsonplaceholder.typicode.com"
+
+    # Get employee information
+    user_response = requests.get("{}/users/{}".format(base_url, employee_id))
+    if user_response.status_code != 200:
+        sys.exit(1)
+
+    user_data = user_response.json()
+    username = user_data.get("username")
+
+    # Get employee's TODO list
+    todos_response = requests.get("{}/todos".format(base_url),
+                                  params={"userId": employee_id})
+    if todos_response.status_code != 200:
+        sys.exit(1)
+
+    todos = todos_response.json()
+
+    # Build JSON structure
+    tasks_list = []
+    for task in todos:
+        tasks_list.append({
+            "task": task.get("title"),
+            "completed": task.get("completed"),
+            "username": username
+        })
+
+    # Create final JSON object
+    json_data = {employee_id: tasks_list}
+
+    # Write to JSON file
+    filename = "{}.json".format(employee_id)
+    with open(filename, mode='w') as jsonfile:
+        json.dump(json_data, jsonfile)
